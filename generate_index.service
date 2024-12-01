@@ -1,0 +1,14 @@
+[Unit]
+Description=Run generate_index script to create the index.html file
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=webgen
+Group=webgen
+ExecStart=/var/lib/webgen/bin/generate_index
+Restart=on-failure
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
