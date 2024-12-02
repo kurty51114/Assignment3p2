@@ -1,7 +1,6 @@
 [Unit]
 Description=Run generate_index script to create the index.html file
-After=network-online.target
-Wants=network-online.target
+Wants=multi-user.target
 
 [Service]
 User=webgen
