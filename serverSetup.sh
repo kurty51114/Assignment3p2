@@ -51,7 +51,7 @@ chown -R webgen:webgen "$WEBGEN_DIR"
 
 # Configure Nginx
 echo "Configuring Nginx..."
-cat > "$NGINX_CONF" <<EOF
+cat <<EOF >"$NGINX_CONF"
 user webgen;
 worker_processes auto;
 worker_cpu_affinity auto;
@@ -87,7 +87,7 @@ http {
 EOF
 
 # Create a server block for webgen
-cat > "$NGINX_CONF_AVAILABLE" <<EOF
+cat <<EOF > "$NGINX_CONF_AVAILABLE"
 server {
     listen 80;
     server_name localhost;
