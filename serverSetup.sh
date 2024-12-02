@@ -1,13 +1,5 @@
 #!/bin/bash
 
-# Variables
-WEBGEN_DIR="/var/lib/webgen"
-NGINX_CONF="/etc/nginx/nginx.conf"
-SERVICE_FILE="/etc/systemd/system/generate_index.service"
-TIMER_FILE="/etc/systemd/system/generate_index.timer"
-NGINX_CONF_AVAILABLE="/etc/nginx/sites-available/webgen"
-NGINX_CONF_ENABLED="/etc/nginx/sites-enabled/webgen"
-
 # Ensure the script is run as root
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root."
@@ -16,30 +8,33 @@ fi
 
 # Install required packages
 echo "Installing required packages..."
+pacman -Syu --noconfirm
 pacman -Syu --noconfirm nginx
+pacman -Syu --noconfirm ufw
 
 # Create a system user for webgen
 echo "Creating system user 'webgen'..."
 if ! id "webgen" &>/dev/null; then
-    sudo useradd -r -d /var/lib/webgen -s /usr/sbin/nologin webgen
+    sudo useradd -r -s /usr/sbin/nologin webgen
 fi
 
 # Create necessary directories
 echo "Creating directory structure..."
-mkdir "$WEBGEN_DIR/bin"
-mkdir "$WEBGEN_DIR/documents"
-mkdir "$WEBGEN_DIR/HTML"
+sudo mkdir -p /var/lib/webgen/bin /var/lib/webgen/documents /var/lib/webgen/HTML
+mkdir /etc/nginx/sites-available
+mkdir /etc/nginx/sites-enabled
 
 # Create sample files in the documents directory
 echo "Creating sample files..."
-echo "Sample content for file-one" > "$WEBGEN_DIR/documents/file-one"
-echo "Sample content for file-two" > "$WEBGEN_DIR/documents/file-two"
+echo "Sample content for file-one" > "/var/lib/webgen/documents/file-one"
+echo "Sample content for file-two" > "/var/lib/webgen/documents/file-two"
 
 # Copy the generate_index script (assuming it's in the same directory as this script)
 if [[ -f generate_index ]]; then
     echo "Copying generate_index script..."
-    cp generate_index "$WEBGEN_DIR/bin/generate_index"
-    chmod +x "$WEBGEN_DIR/bin/generate_index"
+    cp generate_index "/var/lib/webgen/bin"
+    sudo pacman -S --noconfirm dos2unix
+    dos2unix /var/lib/webgen/bin/generate_index
 else
     echo "generate_index script not found! Make sure it's in the same directory as this script."
     exit 1
@@ -47,11 +42,12 @@ fi
 
 # Set ownership for webgen directories
 echo "Setting ownership of webgen directories..."
-chown -R webgen:webgen "$WEBGEN_DIR"
+sudo chmod a+x /var/lib/webgen/bin/generate_index
+sudo chown -R webgen:webgen /var/lib/webgen
 
 # Configure Nginx
 echo "Configuring Nginx..."
-cat <<EOF >"$NGINX_CONF"
+cat <<EOF >"/etc/nginx/nginx.conf"
 user webgen;
 worker_processes auto;
 worker_cpu_affinity auto;
@@ -87,12 +83,12 @@ http {
 EOF
 
 # Create a server block for webgen
-cat <<EOF > "$NGINX_CONF_AVAILABLE"
+cat <<EOF > "/etc/nginx/sites-available/webgen.conf"
 server {
     listen 80;
     server_name localhost;
 
-    root $WEBGEN_DIR/HTML;
+    root /var/lib/webgen/HTML;
     index index.html;
 
     location / {
@@ -100,14 +96,14 @@ server {
     }
 
     location /documents {
-        root $WEBGEN_DIR;
+        root /var/lib/webgen;
         autoindex on;
     }
 }
 EOF
 
 # Create symbolic link in sites-enabled to enable the server block
-ln -sf "$NGINX_CONF_AVAILABLE" "$NGINX_CONF_ENABLED"
+ln -s /etc/nginx/sites-available/webgen.conf /etc/nginx/sites-enabled/webgen.conf
 
 # Restart Nginx to apply changes made to the configuration
 echo "Restarting Nginx..."
@@ -117,11 +113,12 @@ systemctl restart nginx
 # Copy and enable the service and timer files (assuming they are in the same directory as this script)
 echo "Setting up generate_index.service and generate_index.timer..."
 if [[ -f ./generate_index.service && -f ./generate_index.timer ]]; then
-    cp ./generate_index.service "$SERVICE_FILE"
-    cp ./generate_index.timer "$TIMER_FILE"
+    cp ./generate_index.service /etc/systemd/system/generate_index.service
+    cp ./generate_index.timer /etc/systemd/system/generate_index.timer
     systemctl daemon-reload
     systemctl enable generate_index.timer
     systemctl start generate_index.timer
+    systemctl start generate_index.service
 else
     echo "Service or timer file not found in current directory! Ensure they are correctly uploaded."
     exit 1
@@ -131,11 +128,11 @@ fi
 sudo ufw allow ssh
 sudo ufw allow http
 sudo ufw limit ssh
-sudo systemctl enable --now ufw.service
+sudo systemctl daemon-reload
+sudo systemctl enable ufw.service
+sudo ufw enable
 
 # Verify firewall status
 sudo ufw status verbose
 
-sudo systemctl disable --now httpd
-
-echo "Server setup complete!"
+echo "Server setup complete!" 

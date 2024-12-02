@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 # this is the generate_index script
 # you shouldn't have to edit this script
 
@@ -11,11 +9,11 @@ OS_NAME=$(grep '^PRETTY_NAME' /etc/os-release | cut -d '=' -f2 | tr -d '"')
 DATE=$(date +"%d/%m/%Y")
 PACKAGE_COUNT=$(pacman -Q | wc -l)
 PUBLIC_IP_ADRESS=$(ip -4 a show dev eth0 | grep inet | awk '{print $2}' | cut -d/ -f1)
-#additional information that can be provided
 MEMORY=$(free -h | grep Mem | awk '{print $2}')
-DISK=$(df -h | grep '/dev/sda1' | awk '{print $2}')
-HOSTNAME=$(hostname)
-DISK_USAGE=$(df -h | grep '/dev/sda1' | awk '{print $5}')
+UPTIME=$(uptime -p)
+ACTIVE_USERS=$(who | wc -l)
+DISK=$(df -h | grep '/$' | awk '{print $2}')
+DISK_USAGE=$(df -h | grep '/$' | awk '{print $5}')
 
 OUTPUT_DIR="/var/lib/webgen/HTML"
 OUTPUT_FILE="$OUTPUT_DIR/index.html"
@@ -43,8 +41,9 @@ cat <<EOF > "$OUTPUT_FILE"
     <p><strong>Number of Installed Packages:</strong> $PACKAGE_COUNT</p>
     <p><strong>Public IP address of server:</strong> $PUBLIC_IP_ADRESS</p>
     <p><strong>Memory:</strong> $MEMORY</p>
-    <p><strong>Disk:</strong> $DISK</p>
-    <p><strong>Hostname:</strong> $HOSTNAME</p>
+    <p><strong>Uptime:</strong> $UPTIME</p>
+    <p><strong>Number of Active Users:</strong> $ACTIVE_USERS</p>
+    <p><strong>Disk Size:</strong> $DISK</p>
     <p><strong>Disk Usage:</strong> $DISK_USAGE</p>
 </body>
 </html>
