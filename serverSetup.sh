@@ -114,16 +114,16 @@ echo "Restarting Nginx..."
 systemctl enable nginx
 systemctl restart nginx
 
-# Copy and enable the service and timer files
+# Copy and enable the service and timer files (assuming they are in the same directory as this script)
 echo "Setting up generate_index.service and generate_index.timer..."
-if [[ -f /tmp/generate_index.service && -f /tmp/generate_index.timer ]]; then
-    cp /tmp/generate_index.service "$SERVICE_FILE"
-    cp /tmp/generate_index.timer "$TIMER_FILE"
+if [[ -f ./generate_index.service && -f ./generate_index.timer ]]; then
+    cp ./generate_index.service "$SERVICE_FILE"
+    cp ./generate_index.timer "$TIMER_FILE"
     systemctl daemon-reload
     systemctl enable generate_index.timer
     systemctl start generate_index.timer
 else
-    echo "Service or timer file not found in /tmp! Ensure they are correctly uploaded."
+    echo "Service or timer file not found in current directory! Ensure they are correctly uploaded."
     exit 1
 fi
 
