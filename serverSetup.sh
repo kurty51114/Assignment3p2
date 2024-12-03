@@ -21,8 +21,7 @@ fi
 # Create necessary directories
 echo "Creating directory structure..."
 sudo mkdir -p /var/lib/webgen/bin /var/lib/webgen/documents /var/lib/webgen/HTML
-mkdir /etc/nginx/sites-available
-mkdir /etc/nginx/sites-enabled
+mkdir /etc/nginx/sites-available /etc/nginx/sites-enabled
 
 # Create sample files in the documents directory
 echo "Creating sample files..."
@@ -32,17 +31,15 @@ echo "Sample content for file-two" > "/var/lib/webgen/documents/file-two"
 # Copy the generate_index script (assuming it's in the same directory as this script)
 if [[ -f generate_index ]]; then
     echo "Copying generate_index script..."
-    cp generate_index "/var/lib/webgen/bin"
-    sudo pacman -S --noconfirm dos2unix
-    dos2unix /var/lib/webgen/bin/generate_index
+    mv generate_index "/var/lib/webgen/bin"
 else
     echo "generate_index script not found! Make sure it's in the same directory as this script."
     exit 1
 fi
 
-# Set ownership for webgen directories
-echo "Setting ownership of webgen directories..."
-sudo chmod a+x /var/lib/webgen/bin/generate_index
+# Set ownership and permissions for webgen directories
+echo "Setting ownership/permissions of webgen directories..."
+sudo chmod +x /var/lib/webgen/bin/generate_index
 sudo chown -R webgen:webgen /var/lib/webgen
 
 # Configure Nginx
@@ -86,7 +83,7 @@ EOF
 cat <<EOF > "/etc/nginx/sites-available/webgen.conf"
 server {
     listen 80;
-    server_name localhost;
+    server_name webgen;
 
     root /var/lib/webgen/HTML;
     index index.html;
@@ -110,11 +107,11 @@ echo "Restarting Nginx..."
 systemctl enable nginx
 systemctl restart nginx
 
-# Copy and enable the service and timer files (assuming they are in the same directory as this script)
+# Move and enable the service and timer files (assuming they are in the same directory as this script)
 echo "Setting up generate_index.service and generate_index.timer..."
 if [[ -f ./generate_index.service && -f ./generate_index.timer ]]; then
-    cp ./generate_index.service /etc/systemd/system/generate_index.service
-    cp ./generate_index.timer /etc/systemd/system/generate_index.timer
+    mv ./generate_index.service /etc/systemd/system/generate_index.service
+    mv ./generate_index.timer /etc/systemd/system/generate_index.timer
     systemctl daemon-reload
     systemctl enable generate_index.timer
     systemctl start generate_index.timer
