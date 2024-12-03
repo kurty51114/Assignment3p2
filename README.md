@@ -31,6 +31,10 @@ sudo reboot
 
 Run the serverSetup.sh script on each server to complete the setup process.
 
+## Accessing the Web Servers
+
+To access the web servers, navigate to the load balancer's IP address in a web browser. The load balancer will distribute traffic between the two servers. Optionally, you can access the individual servers by navigating to their respective IP addresses.
+
 ## References
 
 [1] McNinch, Nathan. https://learn.bcit.ca/content/enforced/1063362-45842.202430/assignment3p1.pdf
